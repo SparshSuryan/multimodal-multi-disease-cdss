@@ -1,0 +1,14 @@
+Disease,Stage,Dataset / Split,Model,AUROC,Accuracy,F1,Brier
+CVD,1. Single Modality (Demographics only),"PTB-XL Test (n=1,500)","Logistic Regression (age, sex)",0.684,0.617,0.455,0.229
+CVD,1. Single Modality (Clinical Tabular),UCI Heart Test (n=184),Calibrated Logistic Regression,0.903,0.837,0.856,0.120
+CVD,1. Single Modality (12-Lead ECG),PTB-XL Test (3-seed),1D Residual CNN (ECGNet),0.912,0.869,0.729,0.090
+CVD,1. Single Modality (Clinical Report Text),"PTB-XL Test (n=1,500)",Calibrated Bio_ClinicalBERT,0.925,0.889,0.759,0.081
+CVD,2. Early Multimodal (ECG + Metadata),PTB-XL Test (3-seed),ECGNet + Age/Sex Fusion,0.913,0.870,0.724,0.090
+CVD,"3. 2-Way Late Fusion (ECG + Clinical, Missing Labs)","Simulated Cohort (n=3,000)",Calibrated Log-Odds Fusion,0.967,0.879,0.886,—
+CVD,4. 3-Way Late Fusion (ECG + Clinical + Text),"Simulated Cohort (n=3,000)",Calibrated 3-Modality Log-Odds,0.985,0.928,0.931,0.055
+CVD,5. + Reliability Filtering (High-Confidence Subset),"High-Reliability Subset (n=1,747)",2-Way Fusion + Reliability Gate (>=0.7),—,0.969,—,—
+CVD,6. Cross-Hospital Generalization (LOHO),UCI Heart (4 Hospitals Mean),Logistic Regression (LOHO),0.809,—,—,—
+CKD,1. Single Modality (Clinical Labs + History),UCI 336 Test (n=80),Calibrated Random Forest,1.000,1.000,1.000,0.010
+CKD,2. Missing-Data Stress Test (50% Inputs Hidden),UCI 336 Test (10 repeats),Random Forest + Missing Indicators,0.982,—,—,—
+CKD,3. Cross-Dataset Generalization (UCI 336 -> 857),22 Overlapping Clinical Features,XGBoost (Zero-Shot Transfer),0.999,0.980,0.985,0.018
+CKD,4. Cross-Dataset Generalization (UCI 857 -> 336),22 Overlapping Clinical Features,Random Forest (Zero-Shot Transfer),1.000,0.990,0.992,0.016
