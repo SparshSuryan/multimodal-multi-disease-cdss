@@ -12,3 +12,5 @@ CKD,1. Single Modality (Clinical Labs + History),UCI 336 Test (n=80),Calibrated 
 CKD,2. Missing-Data Stress Test (50% Inputs Hidden),UCI 336 Test (10 repeats),Random Forest + Missing Indicators,0.982,—,—,—
 CKD,3. Cross-Dataset Generalization (UCI 336 -> 857),22 Overlapping Clinical Features,XGBoost (Zero-Shot Transfer),0.999,0.980,0.985,0.018
 CKD,4. Cross-Dataset Generalization (UCI 857 -> 336),22 Overlapping Clinical Features,Random Forest (Zero-Shot Transfer),1.000,0.990,0.992,0.016
+CVD,2b. Optimized 3-Seed ECG+Meta Ensemble (INT8),PTB-XL Test | Size: 3.77 MB | CPU: 15.7 ms,Dynamic INT8 3-Seed ECGNet Ensemble,0.920,0.874,0.747,0.086
+CVD,7. Dynamic INT8 Quantized Medical NLP (CPU Deployment),Size: 413.3 -> 168.6 MB | CPU: 473 -> 172 ms,Dynamic INT8 Bio_ClinicalBERT,0.925,0.889,0.759,0.081
