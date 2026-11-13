@@ -1,7 +1,13 @@
-Module / Pipeline,Baseline (Unoptimized),Optimized (Ours),Baseline AUROC,Optimized AUROC,Baseline F1,Optimized F1,Baseline Brier,Optimized Brier,Efficiency / Robustness Gain
-1. CVD Clinical Tabular (UCI Heart),Standard Imputation (Missing Flags OFF),Informative Missingness Flags ON + Platt Calibrated,0.882,0.903,0.814,0.856,0.137,0.12,"+4.2% F1, -12.4% Brier Error (<1 MB)"
-2. CVD 12-Lead ECG (PTB-XL),"Single-Seed ECGNet Only (FP32, thr=0.5)",3-Seed ECG+Meta Ensemble + Platt Cal + Tuned Thr + INT8,0.912,0.92,0.729,0.747,0.09,0.086,3.86 -> 3.77 MB (15.7 ms CPU)
-3. CVD Medical NLP (Bio_ClinicalBERT),"FP32 Fine-Tuned (Default Thr=0.5, Uncalibrated)",Dynamic INT8 Quantized + Platt Cal + Validation Thr,0.925,0.925,0.762,0.759,0.094,0.081,413.3 -> 168.6 MB (473 -> 172 ms CPU)
-4. CVD Multimodal Fusion (Missing Labs),2-Way Equal Probability Average,3-Way Calibrated Log-Odds Fusion (ECG + Clinical + Text),0.963,0.9845,0.886,0.931,0.086,0.0549,96.9% Acc on High-Reliability Tier
-5. CKD Intra-Dataset & 50% Missing Labs,Linear Baseline (LogReg under 50% Missing Labs),Calibrated Random Forest + Missingness Indicators,0.928,0.982,0.969,1.0,0.032,0.001,+5.4% AUROC under 50% Missing Labs
-6. CKD Cross-Dataset (UCI 857 -> UCI 336),Standard Linear Transfer (LogReg),Non-Linear Calibrated Tree Ensemble Transfer (RF),0.988,1.0,0.789,0.992,0.272,0.016,"+20.3% F1, -94% Brier Error Across Countries"
+Module / Pipeline,Version,Method,Accuracy,Precision,Recall,F1,AUROC,Brier,Efficiency / Robustness Gain
+1. CVD Clinical Tabular (UCI Heart),Baseline,Standard Imputation (Missing Flags OFF),0.793,0.814,0.814,0.814,0.882,0.137,Standard median imputation
+1. CVD Clinical Tabular (UCI Heart),Optimized,Missingness Flags ON + Platt Calibrated,0.837,0.84,0.873,0.856,0.903,0.12,"+4.2% F1, -12.4% Brier Error (<1 MB)"
+2. CVD 12-Lead ECG (PTB-XL),Baseline,"Single-Seed ECGNet Only (FP32, thr=0.5)",0.869,0.708,0.755,0.729,0.912,0.09,FP32: 3.86 MB (17.6 ms CPU)
+2. CVD 12-Lead ECG (PTB-XL),Optimized,3-Seed ECG+Meta + Platt Cal + Tuned Thr + INT8,0.881,0.741,0.755,0.747,0.92,0.086,INT8: 3.77 MB (17.2 ms CPU)
+3. CVD Medical NLP (Bio_ClinicalBERT),Baseline,TF-IDF Linear Baseline / FP32 Uncalibrated,0.848,0.659,0.661,0.66,0.882,0.129,FP32 BERT: 413.3 MB (634 ms CPU)
+3. CVD Medical NLP (Bio_ClinicalBERT),Optimized,Dynamic INT8 Bio_ClinicalBERT + Platt Cal + Val Thr,0.889,0.778,0.745,0.759,0.925,0.081,"INT8 BERT: 168.6 MB (270 ms, 2.75x faster)"
+4. CVD Multimodal Fusion (Missing Labs),Baseline,2-Way Equal Probability Average,0.879,0.871,0.901,0.886,0.963,0.086,Naive equal weighting
+4. CVD Multimodal Fusion (Missing Labs),Optimized,3-Way Calibrated Log-Odds Fusion,0.928,0.923,0.939,0.931,0.985,0.0549,96.9% Acc on High-Reliability Tier
+5. CKD Intra-Dataset & 50% Missing Labs,Baseline,Linear Baseline (LogReg under 50% Missing Labs),0.962,1.0,0.94,0.969,0.928,0.032,Degrades under missing labs
+5. CKD Intra-Dataset & 50% Missing Labs,Optimized,Calibrated Random Forest + Missingness Flags,1.0,1.0,1.0,1.0,0.982,0.001,+5.4% AUROC under 50% Missing Labs
+6. CKD Cross-Dataset (UCI 857 -> UCI 336),Baseline,Standard Linear Transfer (LogReg),0.667,0.981,0.66,0.789,0.988,0.272,Sensitive to feature discretization
+6. CKD Cross-Dataset (UCI 857 -> UCI 336),Optimized,Non-Linear Calibrated Tree Transfer (RF),0.99,0.988,0.996,0.992,1.0,0.016,"+20.3% F1, -94% Brier Error Across Countries"
