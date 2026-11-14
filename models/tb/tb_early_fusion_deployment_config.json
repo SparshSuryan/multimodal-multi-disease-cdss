@@ -1,1 +1,38 @@
-
+{
+  "model": "early_fusion_densenet121",
+  "checkpoint": "/content/drive/MyDrive/Major_Project/Tuberculosis/outputs/fusion/tb_early_fusion_best.pth",
+  "selection_metric": "validation_auroc",
+  "validation_auroc": 0.971429,
+  "input_channels": 5,
+  "input_size": [
+    224,
+    224
+  ],
+  "metadata_features": [
+    "age_normalized",
+    "sex_encoded"
+  ],
+  "age_mean": 35.25053995680346,
+  "age_std": 14.229751432908326,
+  "sex_encoding": {
+    "Female": 0,
+    "Male": 1
+  },
+  "image_normalization": {
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ]
+  },
+  "default_threshold": 0.5,
+  "screening_threshold": 0.0087985368445515,
+  "screening_threshold_source": "validation",
+  "score_type": "uncalibrated_softmax",
+  "intended_use": "research_prototype_only"
+}
