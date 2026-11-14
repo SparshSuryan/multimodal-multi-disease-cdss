@@ -1,34 +1,40 @@
 
 import json
-import sys
+import math
 from pathlib import Path
 
 import torch
 import torch.nn as nn
-from PIL import Image
 from torchvision import transforms
 from torchvision.models import densenet121
+
+from .tb_preprocessing import preprocess_tb_image
 
 
 class TBEarlyFusionPredictor:
     """
-    Research-only TB screening predictor.
+    Research-only multimodal TB screening predictor.
 
     Inputs:
-        Chest X-ray image, age, sex
+        Chest X-ray image path
+        Patient age
+        Patient sex ("Male" or "Female")
 
     Output:
-        Uncalibrated softmax score and screening flag.
+        Uncalibrated TB softmax score
+        Screening threshold
+        Screening flag
 
-    This model is not clinically validated and must not
-    be used as an autonomous diagnostic system.
+    This model is not clinically validated.
+    It must not be used as an autonomous diagnostic system.
     """
 
-    def __init__(
-        self,
-        config_path,
-        device=None
-    ):
+    def __init__(self, config_path, device=None):
+
+        # --------------------------------------------------
+        # 1. Load deployment configuration
+        # --------------------------------------------------
+
         self.config_path = Path(config_path).resolve()
 
         if not self.config_path.is_file():
@@ -36,28 +42,65 @@ class TBEarlyFusionPredictor:
                 f"Missing configuration: {self.config_path}"
             )
 
-        with open(self.config_path, "r") as f:
+        with open(self.config_path, "r", encoding="utf-8") as f:
             self.config = json.load(f)
 
+        # --------------------------------------------------
+        # 2. Select device
+        # --------------------------------------------------
+
         self.device = torch.device(
-            device or (
-                "cuda" if torch.cuda.is_available()
+            device
+            if device is not None
+            else (
+                "cuda"
+                if torch.cuda.is_available()
                 else "cpu"
             )
         )
 
+        # --------------------------------------------------
+        # 3. Resolve checkpoint path
+        # --------------------------------------------------
+
         checkpoint_path = Path(
             self.config["checkpoint"]
-        )
+        ).expanduser()
+
+        # Relative paths are resolved from repository root.
+        if not checkpoint_path.is_absolute():
+            project_root = Path(__file__).resolve().parents[2]
+            checkpoint_path = project_root / checkpoint_path
+
+        checkpoint_path = checkpoint_path.resolve()
 
         if not checkpoint_path.is_file():
             raise FileNotFoundError(
-                f"Missing checkpoint: {checkpoint_path}"
+                f"Missing TB checkpoint: {checkpoint_path}\n"
+                "Place the trained checkpoint in models/tb/ "
+                "and check the deployment JSON path."
             )
+
+        self.checkpoint_path = checkpoint_path
+
+        # --------------------------------------------------
+        # 4. Load frozen screening threshold
+        # --------------------------------------------------
 
         self.threshold = float(
             self.config["screening_threshold"]
         )
+
+        if not math.isfinite(self.threshold) or not (
+            0.0 <= self.threshold <= 1.0
+        ):
+            raise ValueError(
+                "Invalid screening threshold in configuration."
+            )
+
+        # --------------------------------------------------
+        # 5. Load training-derived metadata statistics
+        # --------------------------------------------------
 
         self.age_mean = float(
             self.config["age_mean"]
@@ -67,7 +110,11 @@ class TBEarlyFusionPredictor:
             self.config["age_std"]
         )
 
-        if self.age_std <= 0:
+        if (
+            not math.isfinite(self.age_mean)
+            or not math.isfinite(self.age_std)
+            or self.age_std <= 0
+        ):
             raise ValueError(
                 "Invalid age normalization statistics."
             )
@@ -76,15 +123,14 @@ class TBEarlyFusionPredictor:
             "sex_encoding"
         ]
 
-        # Preprocessing module created during TB preparation.
-        outputs_dir = self.config_path.parent.parent
+        # --------------------------------------------------
+        # 6. Image preprocessing
+        # --------------------------------------------------
 
-        if str(outputs_dir) not in sys.path:
-            sys.path.insert(0, str(outputs_dir))
-
-        from tb_preprocessing import preprocess_tb_image
-
-        self.preprocess_tb_image = preprocess_tb_image
+        # preprocess_tb_image comes from:
+        # backend/services/tb_preprocessing.py
+        #
+        # It must remain identical to training preprocessing.
 
         self.transform = transforms.Compose([
             transforms.ToTensor(),
@@ -98,7 +144,10 @@ class TBEarlyFusionPredictor:
             )
         ])
 
-        # Reconstruct the exact 5-channel architecture.
+        # --------------------------------------------------
+        # 7. Reconstruct early-fusion DenseNet-121
+        # --------------------------------------------------
+
         model = densenet121(weights=None)
 
         model.classifier = nn.Linear(
@@ -108,6 +157,7 @@ class TBEarlyFusionPredictor:
 
         original_conv = model.features.conv0
 
+        # Three RGB channels + age + sex = five channels
         model.features.conv0 = nn.Conv2d(
             in_channels=5,
             out_channels=original_conv.out_channels,
@@ -117,8 +167,12 @@ class TBEarlyFusionPredictor:
             bias=False
         )
 
+        # --------------------------------------------------
+        # 8. Load frozen model weights
+        # --------------------------------------------------
+
         state_dict = torch.load(
-            checkpoint_path,
+            self.checkpoint_path,
             map_location="cpu",
             weights_only=True
         )
@@ -132,17 +186,17 @@ class TBEarlyFusionPredictor:
             self.device
         ).eval()
 
-    def predict(
-        self,
-        image_path,
-        age,
-        sex
-    ):
+    # ------------------------------------------------------
+    # 9. Single-patient multimodal inference
+    # ------------------------------------------------------
+
+    def predict(self, image_path, age, sex):
+
         image_path = Path(image_path)
 
         if not image_path.is_file():
             raise FileNotFoundError(
-                f"Image not found: {image_path}"
+                f"Chest X-ray not found: {image_path}"
             )
 
         try:
@@ -150,11 +204,11 @@ class TBEarlyFusionPredictor:
         except (TypeError, ValueError):
             raise ValueError(
                 "Age must be numeric."
-            )
+            ) from None
 
-        import math
-
-        if not math.isfinite(age) or not (0 <= age <= 120):
+        if not math.isfinite(age) or not (
+            0 <= age <= 120
+        ):
             raise ValueError(
                 "Age must be between 0 and 120."
             )
@@ -164,13 +218,21 @@ class TBEarlyFusionPredictor:
                 "Sex must be 'Male' or 'Female'."
             )
 
-        image = self.preprocess_tb_image(
+        # --------------------------------------------------
+        # 10. Preprocess chest X-ray
+        # --------------------------------------------------
+
+        image = preprocess_tb_image(
             str(image_path)
         )
 
         image_tensor = self.transform(
             image
         )
+
+        # --------------------------------------------------
+        # 11. Normalize metadata using TRAINING statistics
+        # --------------------------------------------------
 
         age_normalized = (
             age - self.age_mean
@@ -185,6 +247,10 @@ class TBEarlyFusionPredictor:
             dtype=torch.float32
         )
 
+        # --------------------------------------------------
+        # 12. Construct five-channel early-fusion input
+        # --------------------------------------------------
+
         metadata_channels = (
             metadata[:, None, None]
             .expand(
@@ -195,7 +261,10 @@ class TBEarlyFusionPredictor:
         )
 
         fused_tensor = torch.cat(
-            [image_tensor, metadata_channels],
+            [
+                image_tensor,
+                metadata_channels
+            ],
             dim=0
         ).unsqueeze(0)
 
@@ -203,7 +272,12 @@ class TBEarlyFusionPredictor:
             self.device
         )
 
+        # --------------------------------------------------
+        # 13. Run inference
+        # --------------------------------------------------
+
         with torch.inference_mode():
+
             logits = self.model(
                 fused_tensor
             )
@@ -213,22 +287,37 @@ class TBEarlyFusionPredictor:
                 dim=1
             )[0, 1].item()
 
-        screening_flag = (
+        screening_flag = bool(
             tb_score >= self.threshold
         )
 
+        # --------------------------------------------------
+        # 14. Return research screening result
+        # --------------------------------------------------
+
         return {
             "model": "TB Early-Fusion DenseNet-121",
-            "tb_score_uncalibrated": float(tb_score),
-            "screening_threshold": self.threshold,
-            "screening_flag": bool(screening_flag),
+
+            "tb_score_uncalibrated": float(
+                tb_score
+            ),
+
+            "screening_threshold": float(
+                self.threshold
+            ),
+
+            "screening_flag": screening_flag,
+
             "screening_result": (
                 "TB screening flag"
                 if screening_flag
                 else "No TB screening flag"
             ),
+
             "disclaimer": (
                 "Research prototype only. "
-                "Not a clinical diagnosis."
+                "Not a clinical diagnosis. "
+                "The TB score is uncalibrated "
+                "and is not a clinical disease probability."
             )
         }
