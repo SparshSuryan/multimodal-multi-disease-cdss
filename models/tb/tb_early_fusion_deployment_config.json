@@ -1,6 +1,6 @@
 {
   "model": "early_fusion_densenet121",
-  "checkpoint": "/content/drive/MyDrive/Major_Project/Tuberculosis/outputs/fusion/tb_early_fusion_best.pth",
+  "checkpoint": "models/tb/tb_early_fusion_best.pth",
   "selection_metric": "validation_auroc",
   "validation_auroc": 0.971429,
   "input_channels": 5,
