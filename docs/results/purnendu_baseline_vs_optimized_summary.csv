@@ -1,0 +1,13 @@
+Disease,Model,Version,Accuracy,Precision,Recall,F1,AUROC,Brier,Optimization Impact
+COPD,Logistic Regression,Baseline,0.7178,0.3537,0.7532,0.4813,0.8021,0.1956,Reference baseline performance
+COPD,Logistic Regression,Optimized,0.7223,0.3580,0.7532,0.4854,0.8030,0.1950,"Slight improvement in accuracy, precision, F1 and AUROC; recall unchanged"
+COPD,Random Forest,Baseline,0.8014,0.3962,0.2727,0.3231,0.7309,0.1331,Reference baseline performance
+COPD,Random Forest,Optimized,0.6930,0.3275,0.7273,0.4516,0.7890,0.1864,"Recall, F1 and AUROC improved; accuracy and Brier score worsened"
+COPD,XGBoost,Baseline,0.8284,0.5152,0.2208,0.3091,0.7657,0.1253,Reference baseline performance
+COPD,XGBoost,Optimized,0.8375,0.5490,0.3636,0.4375,0.7969,0.1293,"Accuracy, precision, recall, F1 and AUROC improved; Brier score slightly worsened"
+NAFLD/MASLD,Logistic Regression,Baseline,0.6475,0.4020,0.5467,0.4633,0.6468,0.2263,Reference baseline performance
+NAFLD/MASLD,Logistic Regression,Optimized,0.6475,0.4020,0.5467,0.4633,0.6472,0.2262,Metrics effectively unchanged; very slight AUROC and Brier improvement
+NAFLD/MASLD,Random Forest,Baseline,0.6642,0.3578,0.2600,0.3012,0.5956,0.2289,Reference baseline performance
+NAFLD/MASLD,Random Forest,Optimized,0.7161,0.4717,0.1667,0.2463,0.6797,0.1877,"Accuracy, precision, AUROC and Brier improved; recall and F1 decreased"
+NAFLD/MASLD,XGBoost,Baseline,0.7087,0.4521,0.2200,0.2960,0.6556,0.1991,Reference baseline performance
+NAFLD/MASLD,XGBoost,Optimized,0.5659,0.3679,0.7800,0.5000,0.6873,0.2584,"Recall, F1 and AUROC improved; accuracy, precision and Brier worsened"
