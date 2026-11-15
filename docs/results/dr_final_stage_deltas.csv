@@ -1,0 +1,4 @@
+Comparison,Δ Accuracy,Δ Balanced Acc,Δ Macro F1,Δ Macro AUROC,Δ Brier (Lower=Better)
+Optimized DenseNet vs. Baseline DenseNet,0.0065,-0.0013,-0.0049,-0.0071,-0.0305
+Multimodal Fusion vs. Optimized DenseNet,0.0,0.011,0.0125,-0.0101,0.0297
+Multimodal Fusion vs. Baseline DenseNet,0.0065,0.0097,0.0076,-0.0172,-0.0008
