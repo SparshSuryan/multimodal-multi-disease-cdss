@@ -53,7 +53,7 @@ class DRMultimodalFusionNet(nn.Module):
 
 
 class DRInferenceService:
-    def __init__(self, weights_dir: str = "backend/weights/dr"):
+    def __init__(self, weights_dir: str = "models/dr"):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.weights_dir = Path(weights_dir)
 
@@ -141,7 +141,7 @@ class DRInferenceService:
         diabetes_type: Optional[str] = None,
     ) -> Dict[str, Any]:
         if self.model is None:
-            raise RuntimeError("DR checkpoint not found at backend/weights/dr/dr_optimized_densenet121_best.pth")
+            raise RuntimeError("DR checkpoint not found at models/dr/dr_optimized_densenet121_best.pth")
 
         pil_img = preprocess_dr_v2_bytes(image_bytes)
         tensor = self.norm_transform(pil_img).unsqueeze(0).to(self.device)

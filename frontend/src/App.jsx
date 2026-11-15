@@ -13,6 +13,8 @@ import ShapExplainationPanel from "./components/sparsh/ShapExplainationPanel";
 import COPDModule from "./components/purnendu/COPDModule";
 import MASLDModule from "./components/purnendu/MASLDModule";
 
+const API_BASE = "http://localhost:8000";
+
 const TABS = [
   {
     id: "cardio-renal",
@@ -34,6 +36,8 @@ const TABS = [
 export default function App() {
   const [activeTab, setActiveTab] = useState("cardio-renal");
   const [cardioRenalResult, setCardioRenalResult] = useState(null);
+  const [cardioRenalLoading, setCardioRenalLoading] = useState(false);
+  const [cardioRenalError, setCardioRenalError] = useState("");
   const [sessionFindings, setSessionFindings] = useState({});
 
   const recordFinding = (diseaseKey, payload) => {
@@ -44,10 +48,28 @@ export default function App() {
     }));
   };
 
-  const handleCardioRenalOutput = (data) => {
-    setCardioRenalResult(data);
-    const key = data?.disease || "CVD/CKD";
-    recordFinding(key, data);
+  const handleCardioRenalSubmit = async (formPayload) => {
+    setCardioRenalLoading(true);
+    setCardioRenalError("");
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/cardio-renal/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formPayload),
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || `Server error (${response.status})`);
+      }
+      const data = await response.json();
+      setCardioRenalResult(data);
+      if (data.cvd) recordFinding("CVD", data.cvd);
+      if (data.ckd) recordFinding("CKD", data.ckd);
+    } catch (err) {
+      setCardioRenalError(err.message || "Failed to connect to backend API on port 8000.");
+    } finally {
+      setCardioRenalLoading(false);
+    }
   };
 
   return (
@@ -67,7 +89,6 @@ export default function App() {
             </p>
           </div>
 
-          {/* Active Session Summary Pill */}
           <div className="bg-[#006065] border border-cyan-400/30 rounded-xl px-4 py-2 text-xs">
             <span className="text-cyan-200 font-medium">Assessed Modules in Session: </span>
             <span className="font-bold text-[#32E0EB]">
@@ -140,13 +161,38 @@ export default function App() {
         {activeTab === "cardio-renal" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             <div className="lg:col-span-7">
-              <ClinicalInputForm onResult={handleCardioRenalOutput} onPredictionComplete={handleCardioRenalOutput} />
+              <ClinicalInputForm
+                onSubmit={handleCardioRenalSubmit}
+                loading={cardioRenalLoading}
+              />
             </div>
             <div className="lg:col-span-5 space-y-6">
+              {cardioRenalError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl p-4 text-sm">
+                  {cardioRenalError}
+                </div>
+              )}
+
               {cardioRenalResult ? (
                 <>
-                  <DiseaseResultCard result={cardioRenalResult} />
-                  <ShapExplainationPanel result={cardioRenalResult} />
+                  {cardioRenalResult.cvd && (
+                    <>
+                      <DiseaseResultCard result={cardioRenalResult.cvd} />
+                      <ShapExplainationPanel
+                        title="CVD Feature Attribution (SHAP)"
+                        explanation={cardioRenalResult.cvd.explanation}
+                      />
+                    </>
+                  )}
+                  {cardioRenalResult.ckd && (
+                    <>
+                      <DiseaseResultCard result={cardioRenalResult.ckd} />
+                      <ShapExplainationPanel
+                        title="CKD Feature Attribution (SHAP)"
+                        explanation={cardioRenalResult.ckd.explanation}
+                      />
+                    </>
+                  )}
                 </>
               ) : (
                 <div className="bg-white rounded-2xl border border-slate-200 p-6 text-sm text-slate-500">
@@ -185,7 +231,6 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-3 px-6 text-center text-xs text-slate-500">
         JIIT Noida • B.Tech VII Semester Major Project (2026–27) • Multimodal AI Clinical Decision Support System
       </footer>
