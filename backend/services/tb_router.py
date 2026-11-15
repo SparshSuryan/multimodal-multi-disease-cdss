@@ -8,7 +8,7 @@ from pathlib import Path
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
-from .services.tb_service import TBInferenceService
+from .tb_service import TBInferenceService
 
 
 router = APIRouter(
