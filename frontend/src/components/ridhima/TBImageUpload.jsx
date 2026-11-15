@@ -3,12 +3,12 @@ import React, { useEffect, useState } from "react";
 
 export default function TBImageUpload() {
   const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState("");
   const [age, setAge] = useState("");
   const [sex, setSex] = useState("");
+  const [preview, setPreview] = useState("");
   const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!image) {
@@ -22,31 +22,40 @@ export default function TBImageUpload() {
     return () => URL.revokeObjectURL(url);
   }, [image]);
 
-  const handleSubmit = async (event) => {
+  async function handleSubmit(event) {
     event.preventDefault();
-
     setError("");
     setResult(null);
 
+    const numericAge = Number(age);
+
     if (!image || age === "" || !sex) {
-      setError("Please provide an X-ray, age, and sex.");
+      setError("Please fill in all three inputs.");
       return;
     }
 
-    const ageNumber = Number(age);
-
     if (
-      !Number.isFinite(ageNumber) ||
-      ageNumber < 0 ||
-      ageNumber > 120
+      !Number.isFinite(numericAge) ||
+      numericAge < 0 ||
+      numericAge > 120
     ) {
       setError("Age must be between 0 and 120.");
       return;
     }
 
+    if (!["image/png", "image/jpeg"].includes(image.type)) {
+      setError("Please upload a PNG or JPEG image.");
+      return;
+    }
+
+    if (image.size > 10 * 1024 * 1024) {
+      setError("Image must be 10 MB or smaller.");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("image", image);
-    formData.append("age", String(ageNumber));
+    formData.append("age", String(numericAge));
     formData.append("sex", sex);
 
     setLoading(true);
@@ -57,208 +66,182 @@ export default function TBImageUpload() {
         body: formData,
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        let message = "TB screening request failed.";
-
-        try {
-          const body = await response.json();
-
-          if (typeof body.detail === "string") {
-            message = body.detail;
-          }
-        } catch {
-          // Keep the default error message.
-        }
-
-        throw new Error(message);
+        throw new Error(
+          typeof data.detail === "string"
+            ? data.detail
+            : "TB screening request failed."
+        );
       }
 
-      const data = await response.json();
       setResult(data);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to contact the TB screening service."
-      );
+      setError(err.message || "Unable to run TB screening.");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const screeningFlag =
-    result?.explanation?.screening_flag;
-
-  const screeningThreshold =
-    result?.explanation?.screening_threshold;
+  const flag = result?.explanation?.screening_flag;
 
   return (
-    <section
+    <div
       style={{
-        maxWidth: 650,
-        margin: "24px auto",
+        maxWidth: 600,
+        margin: "30px auto",
         padding: 24,
         border: "1px solid #ddd",
         borderRadius: 12,
-        fontFamily: "Arial, sans-serif",
       }}
     >
-      <h2>TB Multimodal Screening</h2>
+      <h2>Tuberculosis Screening</h2>
 
       <p>
-        Research-only chest X-ray screening using
-        Early-Fusion DenseNet-121, age, and sex.
+        Multimodal TB screening using a chest X-ray,
+        patient age, and sex.
       </p>
 
       <form onSubmit={handleSubmit}>
-        <label>
-          <strong>Chest X-ray</strong>
+        <div style={{ marginBottom: 16 }}>
+          <label htmlFor="tb-image">
+            <strong>Chest X-ray image</strong>
+          </label>
+
           <input
+            id="tb-image"
             type="file"
             accept="image/png,image/jpeg"
             required
             onChange={(event) => {
-              const file = event.target.files?.[0] || null;
-              setImage(file);
+              setImage(event.target.files?.[0] || null);
               setResult(null);
-              setError("");
             }}
-            style={{ display: "block", margin: "8px 0 16px" }}
+            style={{ display: "block", marginTop: 8 }}
           />
-        </label>
+        </div>
 
         {preview && (
           <img
             src={preview}
-            alt="Selected chest X-ray preview"
+            alt="Selected chest X-ray"
             style={{
-              maxWidth: "100%",
-              maxHeight: 300,
+              width: "100%",
+              maxHeight: 280,
               objectFit: "contain",
               marginBottom: 16,
             }}
           />
         )}
 
-        <label>
-          <strong>Age</strong>
+        <div style={{ marginBottom: 16 }}>
+          <label htmlFor="tb-age">
+            <strong>Patient age</strong>
+          </label>
+
           <input
+            id="tb-age"
             type="number"
             min="0"
             max="120"
             step="any"
             value={age}
             required
-            onChange={(event) => setAge(event.target.value)}
+            onChange={(event) => {
+              setAge(event.target.value);
+              setResult(null);
+            }}
             style={{
               display: "block",
               width: "100%",
               padding: 8,
-              margin: "8px 0 16px",
+              marginTop: 8,
               boxSizing: "border-box",
             }}
           />
-        </label>
+        </div>
 
-        <label>
-          <strong>Sex</strong>
+        <div style={{ marginBottom: 16 }}>
+          <label htmlFor="tb-sex">
+            <strong>Patient sex</strong>
+          </label>
+
           <select
+            id="tb-sex"
             value={sex}
             required
-            onChange={(event) => setSex(event.target.value)}
+            onChange={(event) => {
+              setSex(event.target.value);
+              setResult(null);
+            }}
             style={{
               display: "block",
               width: "100%",
               padding: 8,
-              margin: "8px 0 16px",
+              marginTop: 8,
               boxSizing: "border-box",
             }}
           >
-            <option value="">Select sex</option>
+            <option value="">Select</option>
             <option value="Female">Female</option>
             <option value="Male">Male</option>
           </select>
-        </label>
+        </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            padding: "12px 20px",
-            border: "none",
-            borderRadius: 8,
-            background: "#1d4ed8",
-            color: "white",
-            cursor: loading ? "wait" : "pointer",
-          }}
-        >
+        <button type="submit" disabled={loading}>
           {loading ? "Analyzing..." : "Run TB Screening"}
         </button>
       </form>
 
       {error && (
-        <p role="alert" style={{ color: "#b91c1c" }}>
+        <p role="alert" style={{ color: "red" }}>
           {error}
         </p>
       )}
 
       {result && (
-        <div
-          aria-live="polite"
-          style={{
-            marginTop: 24,
-            padding: 16,
-            border: "1px solid #ddd",
-            borderRadius: 8,
-          }}
-        >
+        <div style={{ marginTop: 24 }}>
           <h3>TB Screening Result</h3>
 
           <p>
-            <strong>Screening outcome:</strong>{" "}
-            {screeningFlag === true
+            <strong>Screening outcome: </strong>
+            {flag === true
               ? "TB screening flag"
-              : screeningFlag === false
+              : flag === false
               ? "No TB screening flag"
               : "Unavailable"}
           </p>
 
           <p>
-            <strong>Uncalibrated model score:</strong>{" "}
+            <strong>Uncalibrated model score: </strong>
             {typeof result.risk === "number"
               ? result.risk.toFixed(6)
               : "Unavailable"}
           </p>
 
           <p>
-            <strong>Screening threshold:</strong>{" "}
-            {typeof screeningThreshold === "number"
-              ? screeningThreshold.toFixed(8)
-              : "Unavailable"}
+            <strong>Screening threshold: </strong>
+            {result.explanation?.screening_threshold ??
+              "Unavailable"}
           </p>
 
           <p>
-            <strong>Reliability:</strong>{" "}
+            <strong>Reliability: </strong>
             {result.reliability ?? "Not assessed"}
           </p>
 
-          <p>
-            <strong>Model:</strong>{" "}
-            {result.explanation?.model ?? "Unavailable"}
+          <p style={{ fontSize: 13, color: "#555" }}>
+            {result.disclaimer}
           </p>
 
           <p style={{ fontSize: 13, color: "#555" }}>
-            {result.disclaimer ||
-              "Research prototype only. Not a clinical diagnosis."}
-          </p>
-
-          <p style={{ fontSize: 13, color: "#555" }}>
-            A screening flag does not confirm tuberculosis,
-            and no flag does not rule it out. The score
-            is not a calibrated clinical probability.
+            Research-only screening support. A screening
+            flag does not confirm TB, and a negative
+            screening flag does not rule it out.
           </p>
         </div>
       )}
-    </section>
+    </div>
   );
 }
