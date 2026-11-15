@@ -1,0 +1,5 @@
+Disease,Stage,Dataset / Split,Model,AUROC,Accuracy,F1,Brier
+COPD,1. Final Optimized Model,NHANES 2011–2012 Test (n=443),Logistic Regression (selected by CV ROC-AUC),0.8030,0.7223,0.4854,0.1950
+NAFLD/MASLD,1. Final Optimized Model,NHANES 2017–2018 Test (n=539),XGBoost (selected by CV ROC-AUC),0.6873,0.5659,0.5000,0.2584
+COPD,2. Probability Calibration,NHANES 2011–2012 Test (n=443),Sigmoid-calibrated Logistic Regression,0.8029,,,0.1163
+NAFLD/MASLD,2. Probability Calibration,NHANES 2017–2018 Test (n=539),Sigmoid-calibrated XGBoost,0.6884,,,0.1841
