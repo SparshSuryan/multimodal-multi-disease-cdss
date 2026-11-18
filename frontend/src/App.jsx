@@ -61,10 +61,10 @@ const DISPLAY_NAMES = {
 };
 
 export default function App() {
-  const [token, setToken] = useState(() => localStorage.getItem("cdss_token") || "");
+  const [token, setToken] = useState(() => sessionStorage.getItem("cdss_token") || "");
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("cdss_user") || "null");
+      return JSON.parse(sessionStorage.getItem("cdss_user") || "null");
     } catch {
       return null;
     }
@@ -85,8 +85,8 @@ export default function App() {
   }, [cardioRenalResult]);
 
   const handleLogout = () => {
-    localStorage.removeItem("cdss_token");
-    localStorage.removeItem("cdss_user");
+    sessionStorage.removeItem("cdss_token");
+    sessionStorage.removeItem("cdss_user");
     setToken("");
     setCurrentUser(null);
     setActivePatient(null);
@@ -113,7 +113,16 @@ export default function App() {
           },
           body: JSON.stringify({
             module_name: DISPLAY_NAMES[diseaseKey] || diseaseKey,
-            prediction: payload.prediction || (riskVal !== null ? `Risk ${Math.round(riskVal * 100)}%` : "Completed"),
+            prediction:
+              payload.prediction === 1 || payload.prediction === "1"
+                ? "Elevated Risk"
+                : payload.prediction === 0 || payload.prediction === "0"
+                ? "Lower Risk"
+                : payload.prediction !== undefined && payload.prediction !== null
+                ? String(payload.prediction)
+                : riskVal !== null
+                ? `Risk ${Math.round(riskVal * 100)}%`
+                : "Completed",
             risk_score: riskVal,
             risk_level: payload.risk_level || null,
             reliability: typeof payload.reliability === "number" ? payload.reliability : null,
@@ -466,7 +475,6 @@ export default function App() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             <TBImageUpload
               onResult={(res) => recordFinding("Tuberculosis", res)}
-              onPredictionComplete={(res) => recordFinding("Tuberculosis", res)}
             />
             <DRImageUpload
               onPredictionComplete={(res) => recordFinding("Diabetic Retinopathy", res)}
@@ -479,11 +487,9 @@ export default function App() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             <COPDModule
               onResult={(res) => recordFinding("COPD", res)}
-              onPredictionComplete={(res) => recordFinding("COPD", res)}
             />
             <MASLDModule
               onResult={(res) => recordFinding("MASLD", res)}
-              onPredictionComplete={(res) => recordFinding("MASLD", res)}
             />
           </div>
         )}

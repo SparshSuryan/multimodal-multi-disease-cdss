@@ -12,4 +12,4 @@ cdss_data/
 *.zip
 *.dat
 *.hea
-clinical_nlp_encoder/
+clinical_nlp_encoder/backend/cdss_records.db

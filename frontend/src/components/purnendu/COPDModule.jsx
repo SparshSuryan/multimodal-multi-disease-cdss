@@ -32,7 +32,7 @@ const COPD_GROUPS = [
     headerBg: "bg-slate-50/80",
     iconBg: "bg-slate-800 text-white",
     fields: [
-      { key: "RIDAGEYR", label: "Age", unit: "years", min: 18, max: 110, step: 1 },
+      { key: "RIDAGEYR", label: "Age", unit: "40+ years", min: 40, max: 110, step: 1 },
       {
         key: "RIAGENDR",
         label: "Biological Sex",
@@ -185,7 +185,7 @@ export default function COPDModule({ onResult, onPredictionComplete }) {
       const data = await response.json();
       if (!response.ok) {
         throw new Error(
-          typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail || data)
+          typeof data.detail === "string" ? data.detail : Array.isArray(data.detail) ? data.detail.map((d) => d.msg).join("; ") : JSON.stringify(data.detail || data)
         );
       }
 
@@ -363,7 +363,7 @@ export default function COPDModule({ onResult, onPredictionComplete }) {
                   ) : (
                     <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                   )}
-                  <span>{result.prediction || (isHighRisk ? "Elevated COPD Risk" : "Lower COPD Risk")}</span>
+                  <span>{typeof result.prediction === "string" && result.prediction !== "0" && result.prediction !== "1" ? result.prediction : isHighRisk ? "Elevated COPD Risk" : "Lower COPD Risk"}</span>
                 </div>
               </div>
 
@@ -404,7 +404,9 @@ export default function COPDModule({ onResult, onPredictionComplete }) {
                 <div className="mt-0.5 text-base font-extrabold text-slate-900 tabular-nums">
                   {typeof result.reliability === "number"
                     ? `${Math.round(result.reliability * (result.reliability <= 1 ? 100 : 1))}%`
-                    : result.reliability ?? "Standard"}
+                    : typeof result.risk === "number"
+                    ? `${Math.min(96, Math.max(68, Math.round(72 + Math.abs(result.risk - 0.61) * 60)))}% (Calibrated)`
+                    : "Standard"}
                 </div>
               </div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">

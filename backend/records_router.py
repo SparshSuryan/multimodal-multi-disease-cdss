@@ -124,6 +124,14 @@ def init_db() -> None:
             )
             conn.execute(
                 "INSERT INTO users (full_name, email, password_hash, role, department, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                ("Dr. Ridhima Jain", "ridhima@cdss.org", hash_password("Ridhima@123"), "doctor", "Radiology & Ophthalmology", now),
+            )
+            conn.execute(
+                "INSERT INTO users (full_name, email, password_hash, role, department, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                ("Dr. Purnendu Raghav Srivastava", "purnendu@cdss.org", hash_password("Purnendu@123"), "doctor", "Pulmonology & Hepatology", now),
+            )
+            conn.execute(
+                "INSERT INTO users (full_name, email, password_hash, role, department, created_at) VALUES (?, ?, ?, ?, ?, ?)",
                 ("System Administrator", "admin@cdss.org", hash_password("Admin@123"), "admin", "Clinical IT Governance", now),
             )
 
@@ -155,7 +163,7 @@ class PatientUpsertRequest(BaseModel):
 
 class ConsultationCreateRequest(BaseModel):
     module_name: str
-    prediction: Optional[str] = None
+    prediction: Optional[Any] = None
     risk_score: Optional[float] = None
     risk_level: Optional[str] = None
     reliability: Optional[float] = None
@@ -338,7 +346,7 @@ def add_consultation(
                 patient["id"],
                 user.get("name", "Attending Physician"),
                 body.module_name,
-                body.prediction,
+                str(body.prediction) if body.prediction is not None else None,
                 body.risk_score,
                 body.risk_level,
                 body.reliability,
